@@ -2,7 +2,7 @@
   "name": "probot-settings",
   "version": "1.0.0",
   "description": "",
-  "repository": "github:probot/settings",
+  "repository": "gitstua:probot/settings",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
@@ -22,7 +22,7 @@
   "dependencies": {
     "deepmerge": "^4.2.2",
     "js-yaml": "^4.1.0",
-    "probot": "12.2.2"
+    "probot": "12.2.1"
   },
   "devDependencies": {
     "@travi/any": "^2.0.20",
@@ -34,7 +34,7 @@
     "nock": "^13.2.4",
     "nodemon": "^2.0.15",
     "npm-run-all": "^4.1.5",
-    "smee-client": "^1.2.2",
+    "smee-client": "^1.0.1",
     "standard": "^16.0.4"
   },
   "standard": {

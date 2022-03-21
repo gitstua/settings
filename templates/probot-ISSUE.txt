@@ -1,0 +1,8 @@
+Hi @{{owner}}
+
+This issue was created by a custom probot
+
+Changes made to the repo
+- README.md added
+- branch protection on main branch means you must have 1 reviewer
+
