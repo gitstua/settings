@@ -5,6 +5,7 @@ const mergeArrayByName = require('./lib/mergeArrayByName')
  */
 module.exports = (robot, _, Settings = require('./lib/settings')) => {
   async function syncSettings (context, repo = context.repo()) {
+    robot.log('syncSettings');
     const config = await context.config('settings.yml', {}, { arrayMerge: mergeArrayByName })
     return Settings.sync(context.octokit, repo, config)
   }
@@ -24,7 +25,6 @@ module.exports = (robot, _, Settings = require('./lib/settings')) => {
     })
   }
 
-
   async function addFile (context, repo = context.repo().repo, owner=context.repo().owner) {
     //encode file
     const fs = require('fs');
@@ -32,7 +32,7 @@ module.exports = (robot, _, Settings = require('./lib/settings')) => {
     let buff = fs.readFileSync(`templates/${fileName}`);
     let base64data = buff.toString('base64');
 
-    console.log('Image converted to base 64 is:\n\n' + base64data);
+    robot.log('file converted to base 64 is:\n' + base64data);
     //note: this option did not work so had to revert to directly using REST
     // const { data } = await context.octokit.repos.createOrUpdateFileContents({
     //         owner: owner,
@@ -53,11 +53,21 @@ module.exports = (robot, _, Settings = require('./lib/settings')) => {
       content: base64data,
     })
   }
-  
 
+//When settings.yml is pushed to github.com/orgname/.github/.github then we initialise all repos
+//we do NOT update any other repo or any with branch protection already enabled 
   robot.on('push', async context => {
     const { payload } = context
     const { repository } = payload
+    let owner = context.repo().owner
+    let repo = context.repo().repo
+
+    robot.log(`Got a push for ${repository.full_name}`)
+
+    if (!repository.full_name.toLowerCase().endsWith('/.github')){
+      robot.log.info('push only initializes all existing when a push is made to template repo in organization or account root named /.github')
+      return true;
+    }
 
     const defaultBranch = payload.ref === 'refs/heads/' + repository.default_branch
     if (!defaultBranch) {
@@ -66,34 +76,66 @@ module.exports = (robot, _, Settings = require('./lib/settings')) => {
     }
 
     const settingsModified = payload.commits.find(commit => {
-      return commit.added.includes(Settings.FILE_NAME) ||
-        commit.modified.includes(Settings.FILE_NAME)
+      return commit.added.includes(Settings.FORCE_OCTO_REPO_INIT) ||
+        commit.modified.includes(Settings.FORCE_OCTO_REPO_INIT)
     })
 
     if (!settingsModified) {
-      robot.log.debug(`No changes in '${Settings.FILE_NAME}' detected, returning...`)
+      robot.log.debug(`No changes in '${Settings.FORCE_OCTO_REPO_INIT}' detected, returning...`)
       return
     }
 
+    //loop through all repos and add settings.yml where they have no issue with the title OCTO_REPO_ISSUE_TITLE
+    robot.log('InstallationId is ' + context.payload.installation.id);
+
+
+   // await octokit.request('GET /app/installations');
+
+
+//    const installationOctokit = new ProbotOctokit({
+  const { Octokit } = require("@octokit/core");
+  const { createProbotAuth } = require("octokit-auth-probot");
+    //const installationOctokit = 
+    new Octokit({
+        auth: {
+        id: process.env.APP_ID,
+        privateKey: process.env.PRIVATE_KEY,
+        installationId: context.payload.installation.id,
+      },
+      authStrategy: createProbotAuth
+    });
+  
+    const repoList = await installationOctokit.repos
+      .get({
+        owner: owner,
+        repo: repo,
+      })
+      .catch(console.warn);
+      console.log("repo", repoList);
+      //res.json(repo);
+
+    // data.forEach(element => {
+    //     const name = element.name;
+    //     octokit.repos.listCommits({
+    //         owner,
+    //         name,
+    //     }).then(r => {
+    //         total += r.data.length;
+    //     }).catch(error => console.log(error));
+    // })
+    // console.log(total);
+
+    // await octokit.request('GET /repos/{owner}/{repo}/issues', {
+    //   owner: 'octocat',
+    //   repo: 'hello-world'
+    // }) 
+
     return syncSettings(context)
-  })
-
-  robot.on('repository.edited', async context => {
-    const { payload } = context
-    const { changes, repository } = payload
-
-    if (!Object.prototype.hasOwnProperty.call(changes, 'default_branch')) {
-      robot.log.debug('Repository configuration was edited but the default branch was not affected, returning...')
-      return
-    }
-
-    robot.log.debug(`Default branch changed from '${changes.default_branch.from}' to '${repository.default_branch}'`)
-
-    return syncSettings(context)
-  })
+   })
 
   robot.on('repository.created', async context => {
     robot.log.info(`repo created`);
     return await addFile(context) && await syncSettings(context) && await addIssue(context)
   })
+
 }

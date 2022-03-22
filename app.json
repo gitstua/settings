@@ -1,8 +1,8 @@
 {
-  "name": "gitstua-github-settings",
-  "description": "Pull Requests for GitHub repository settings",
+  "name": "gitstua-octo-repo-init",
+  "description": "Initialize repositories with defaults",
   "keywords": ["node", "github"],
-  "repository": "https://github.com/gitstua/github-settings",
+  "repository": "https://github.com/gitstua/settings",
   "env": {
     "PRIVATE_KEY": {
       "description": "the private key you downloaded when creating the GitHub Integration"

@@ -17,7 +17,7 @@
     "test:integration": "jest --test-timeout=10000 'test/integration/'",
     "test:integration:debug": "LOG_LEVEL=debug DEBUG=nock.* run-s test:integration"
   },
-  "author": "Brandon Keepers",
+  "author": "Stu Eggerton based on work by Brandon Keepers",
   "license": "ISC",
   "dependencies": {
     "deepmerge": "^4.2.2",
